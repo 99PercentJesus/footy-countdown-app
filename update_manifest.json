@@ -1,0 +1,8 @@
+{
+  "versionCode": 2,
+  "versionName": "1.1",
+  "apkUrl": "https://example.com/match-countdown-v1.1.apk",
+  "changelog": "• Added real-time countdown widget animations\n• Updated team crests and colors\n• Performance optimizations and bug fixes",
+  "releaseDate": "2026-09-20",
+  "forceUpdate": false
+}
