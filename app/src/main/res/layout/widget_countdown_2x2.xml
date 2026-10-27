@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 2x2 Square Widget (110dp x 110dp up to ~180dp x 180dp) -->
-<!-- Perfectly proportioned: Update badge (if any), Crests + VS, Clean 1-line timer -->
+<!-- 2x2 Square Widget (110dp x 110dp to 180dp x 180dp) -->
+<!-- Zero wasted vertical blank space: Crests scaled to 46dp, perfectly centered layout -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_container"
     android:layout_width="match_parent"
@@ -35,41 +35,34 @@
             android:paddingEnd="4dp"
             android:paddingTop="1dp"
             android:paddingBottom="1dp"
-            android:layout_marginBottom="2dp"
+            android:layout_marginBottom="3dp"
             android:visibility="gone" />
 
-        <!-- Header: Competition & Kickoff in 1 clean line -->
+        <!-- Top Header: Competition & Kickoff in 1 clean line -->
         <TextView
             android:id="@+id/widget_kickoff_datetime"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="LALIGA"
             android:textColor="#858D9C"
-            android:textSize="9sp"
+            android:textSize="10sp"
             android:textStyle="bold"
             android:singleLine="true"
             android:ellipsize="end"
-            android:layout_marginBottom="4dp" />
+            android:layout_marginBottom="6dp" />
 
-        <!-- Hidden text views for compatibility if code sets text -->
-        <TextView
-            android:id="@+id/widget_competition_name"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:visibility="gone" />
-
-        <!-- Crests & VS Row -->
+        <!-- Crests & VS: scaled to 46dp so it fills the square nicely without vertical emptiness -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center"
-            android:layout_marginBottom="6dp">
+            android:layout_marginBottom="8dp">
 
             <ImageView
                 android:id="@+id/widget_home_crest"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="46dp"
+                android:layout_height="46dp"
                 android:scaleType="fitCenter" />
 
             <TextView
@@ -78,36 +71,17 @@
                 android:layout_height="wrap_content"
                 android:text="VS"
                 android:textColor="#525866"
-                android:textSize="10sp"
+                android:textSize="11sp"
                 android:textStyle="bold"
-                android:layout_marginStart="6dp"
-                android:layout_marginEnd="6dp" />
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp" />
 
             <ImageView
                 android:id="@+id/widget_away_crest"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="46dp"
+                android:layout_height="46dp"
                 android:scaleType="fitCenter" />
         </LinearLayout>
-
-        <!-- Hidden team names (too small for 2x2, but bound safely in code) -->
-        <TextView
-            android:id="@+id/widget_home_name"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/widget_away_name"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:visibility="gone" />
-
-        <ImageView
-            android:id="@+id/widget_comp_emblem"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:visibility="gone" />
 
         <!-- Compact Timer Pill Block -->
         <LinearLayout
@@ -116,20 +90,20 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:background="@drawable/bg_digit_block"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp"
-            android:paddingStart="4dp"
-            android:paddingEnd="4dp"
+            android:paddingTop="5dp"
+            android:paddingBottom="5dp"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
             android:gravity="center">
 
-            <!-- 1-line Live Chronometer: 17sp Monospace fits 00:00:00 on ANY small 2x2 screen without wrapping -->
+            <!-- 1-line Live Chronometer: 18sp Monospace fits 00:00:00 on ANY 2x2 screen -->
             <Chronometer
                 android:id="@+id/widget_chronometer"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="00:00:00"
                 android:textColor="#3DFF8C"
-                android:textSize="17sp"
+                android:textSize="18sp"
                 android:textStyle="bold"
                 android:fontFamily="monospace"
                 android:singleLine="true"
@@ -141,19 +115,13 @@
                 android:id="@+id/widget_chronometer_units"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="HRS : MIN : SEC"
+                android:text="HOURS : MIN : SEC"
                 android:textColor="#667085"
                 android:textSize="8sp"
                 android:textStyle="bold"
                 android:singleLine="true"
                 android:letterSpacing="0.08" />
         </LinearLayout>
-
-        <TextView
-            android:id="@+id/widget_countdown_tag"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:visibility="gone" />
 
         <!-- Live Status Ribbon (in-play) -->
         <LinearLayout
@@ -175,6 +143,37 @@
                 android:textStyle="bold"
                 android:letterSpacing="0.05" />
         </LinearLayout>
+
+        <!-- Hidden views to safely satisfy unified binding -->
+        <TextView
+            android:id="@+id/widget_competition_name"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/widget_home_name"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/widget_away_name"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/widget_comp_emblem"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/widget_countdown_tag"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone" />
     </LinearLayout>
 
     <!-- State 2: No Fixture -->

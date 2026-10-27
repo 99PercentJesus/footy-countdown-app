@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 3x2 & 4x2 Wide Scoreboard Widget -->
+<!-- 3x2 & 4x2 Horizontal Widget: Full Crests + Team Names + Wide Uncropped Digital Clock -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="12dp"
+    android:padding="10dp"
     android:background="@drawable/bg_widget"
     android:gravity="center"
     android:focusable="true"
@@ -27,14 +27,14 @@
             android:layout_height="wrap_content"
             android:text="⚡ NEW UPDATE PENDING · TAP TO INSTALL"
             android:textColor="#3DFF8C"
-            android:textSize="10sp"
+            android:textSize="9sp"
             android:textStyle="bold"
             android:background="@drawable/bg_digit_block"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:paddingTop="3dp"
-            android:paddingBottom="3dp"
-            android:layout_marginBottom="6dp"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:layout_marginBottom="4dp"
             android:visibility="gone" />
 
         <!-- Top Row: Competition & Kickoff Datetime -->
@@ -43,7 +43,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="8dp">
+            android:layout_marginBottom="6dp">
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -69,7 +69,7 @@
                     android:textSize="11sp"
                     android:textStyle="bold"
                     android:textAllCaps="true"
-                    android:letterSpacing="0.08"
+                    android:letterSpacing="0.06"
                     android:singleLine="true" />
             </LinearLayout>
 
@@ -82,17 +82,17 @@
                 android:textSize="11sp"
                 android:textStyle="bold"
                 android:textAllCaps="true"
-                android:letterSpacing="0.06"
+                android:letterSpacing="0.04"
                 android:singleLine="true" />
         </LinearLayout>
 
-        <!-- Middle Row: Team vs Team with Crests and Short Names -->
+        <!-- Middle Row: Team vs Team with Crests and Names -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="10dp">
+            android:layout_marginBottom="8dp">
 
             <!-- Home -->
             <LinearLayout
@@ -104,36 +104,21 @@
 
                 <ImageView
                     android:id="@+id/widget_home_crest"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
                     android:layout_marginEnd="8dp"
                     android:scaleType="fitCenter" />
 
-                <LinearLayout
+                <TextView
+                    android:id="@+id/widget_home_name"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/widget_home_name"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Barcelona"
-                        android:textColor="#FFFFFF"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:singleLine="true"
-                        android:ellipsize="end" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="HOME"
-                        android:textColor="#667085"
-                        android:textSize="9sp"
-                        android:textStyle="bold"
-                        android:letterSpacing="0.08" />
-                </LinearLayout>
+                    android:text="Barcelona"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:singleLine="true"
+                    android:ellipsize="end" />
             </LinearLayout>
 
             <!-- VS -->
@@ -156,53 +141,38 @@
                 android:orientation="horizontal"
                 android:gravity="center_vertical|end">
 
-                <LinearLayout
+                <TextView
+                    android:id="@+id/widget_away_name"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="end">
-
-                    <TextView
-                        android:id="@+id/widget_away_name"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Alavés"
-                        android:textColor="#FFFFFF"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:singleLine="true"
-                        android:ellipsize="end" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="AWAY"
-                        android:textColor="#667085"
-                        android:textSize="9sp"
-                        android:textStyle="bold"
-                        android:letterSpacing="0.08" />
-                </LinearLayout>
+                    android:text="Alavés"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:singleLine="true"
+                    android:ellipsize="end" />
 
                 <ImageView
                     android:id="@+id/widget_away_crest"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
                     android:layout_marginStart="8dp"
                     android:scaleType="fitCenter" />
             </LinearLayout>
         </LinearLayout>
 
         <!-- Bottom Row: Unified Live Countdown Chronometer -->
+        <!-- Fixed: textSize="21sp" with letterSpacing="0.02" guarantees 00:00:00 (Hours:Mins:Secs) NEVER gets dotted out on 3x2 -->
         <LinearLayout
             android:id="@+id/widget_blocks_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:background="@drawable/bg_digit_block"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
             android:gravity="center">
 
             <Chronometer
@@ -211,12 +181,12 @@
                 android:layout_height="wrap_content"
                 android:text="00:00:00"
                 android:textColor="#3DFF8C"
-                android:textSize="26sp"
+                android:textSize="21sp"
                 android:textStyle="bold"
                 android:fontFamily="monospace"
                 android:singleLine="true"
                 android:gravity="center"
-                android:letterSpacing="0.06" />
+                android:letterSpacing="0.02" />
 
             <TextView
                 android:id="@+id/widget_chronometer_units"
@@ -224,10 +194,10 @@
                 android:layout_height="wrap_content"
                 android:text="TOTAL HOURS : MIN : SEC"
                 android:textColor="#667085"
-                android:textSize="10sp"
+                android:textSize="9sp"
                 android:textStyle="bold"
                 android:singleLine="true"
-                android:letterSpacing="0.1" />
+                android:letterSpacing="0.06" />
         </LinearLayout>
 
         <TextView
@@ -242,7 +212,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_digit_block"
-            android:padding="8dp"
+            android:padding="6dp"
             android:gravity="center"
             android:visibility="gone">
 
@@ -252,7 +222,7 @@
                 android:layout_height="wrap_content"
                 android:text="IN PLAY · LIVE"
                 android:textColor="#FF4D4D"
-                android:textSize="12sp"
+                android:textSize="11sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.05" />
         </LinearLayout>

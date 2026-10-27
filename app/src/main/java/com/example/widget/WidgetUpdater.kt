@@ -163,26 +163,34 @@ object WidgetUpdater {
         compBitmap: Bitmap?,
         pendingIntent: PendingIntent
     ): RemoteViews {
+        val viewsPill = RemoteViews(context.packageName, R.layout.widget_countdown_pill)
         val views2x2 = RemoteViews(context.packageName, R.layout.widget_countdown_2x2)
         val views4x2 = RemoteViews(context.packageName, R.layout.widget_countdown_4x2)
         val views4x4 = RemoteViews(context.packageName, R.layout.widget_countdown_4x4)
 
         // Populate each layout
-        populateViews(views2x2, isCompact2x2 = true, isLarge4x4 = false, selectedTeam, cachedMatch, homeBitmap, awayBitmap, compBitmap, context)
-        populateViews(views4x2, isCompact2x2 = false, isLarge4x4 = false, selectedTeam, cachedMatch, homeBitmap, awayBitmap, compBitmap, context)
-        populateViews(views4x4, isCompact2x2 = false, isLarge4x4 = true, selectedTeam, cachedMatch, homeBitmap, awayBitmap, compBitmap, context)
+        populateViews(viewsPill, isPill = true, isCompact2x2 = false, isLarge4x4 = false, selectedTeam, cachedMatch, homeBitmap, awayBitmap, compBitmap, context)
+        populateViews(views2x2, isPill = false, isCompact2x2 = true, isLarge4x4 = false, selectedTeam, cachedMatch, homeBitmap, awayBitmap, compBitmap, context)
+        populateViews(views4x2, isPill = false, isCompact2x2 = false, isLarge4x4 = false, selectedTeam, cachedMatch, homeBitmap, awayBitmap, compBitmap, context)
+        populateViews(views4x4, isPill = false, isCompact2x2 = false, isLarge4x4 = true, selectedTeam, cachedMatch, homeBitmap, awayBitmap, compBitmap, context)
 
+        viewsPill.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
         views2x2.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
         views4x2.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
         views4x4.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             // Android 12+ native responsive widget layout mapping:
-            // The Android launcher dynamically switches the layout in real time as the user drags the resize handles!
+            // The Android launcher dynamically switches the layout in real time as the user drags resize handles:
+            // - Pill: 4x1 (wide, short height < 90dp)
+            // - Compact Square: 2x2 (~110-180dp square)
+            // - Wide: 3x2, 4x2 (height ~100-170dp, width >= 180dp)
+            // - Large Showcase: 3x3, 4x3, 4x4 (height >= 180dp)
             val viewMapping = mapOf(
-                SizeF(100f, 100f) to views2x2,
-                SizeF(200f, 100f) to views4x2,
-                SizeF(200f, 200f) to views4x4
+                SizeF(180f, 45f) to viewsPill,
+                SizeF(100f, 95f) to views2x2,
+                SizeF(180f, 95f) to views4x2,
+                SizeF(180f, 180f) to views4x4
             )
             return RemoteViews(viewMapping)
         } else {
@@ -192,8 +200,9 @@ object WidgetUpdater {
             val minHeight = options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 110) ?: 110
 
             return when {
+                minHeight < 80 -> viewsPill
                 minHeight >= 180 -> views4x4
-                minWidth >= 200 -> views4x2
+                minWidth >= 180 -> views4x2
                 else -> views2x2
             }
         }
@@ -201,6 +210,7 @@ object WidgetUpdater {
 
     private fun populateViews(
         views: RemoteViews,
+        isPill: Boolean,
         isCompact2x2: Boolean,
         isLarge4x4: Boolean,
         selectedTeam: SelectedTeamEntity?,
