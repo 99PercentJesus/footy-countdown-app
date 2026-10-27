@@ -102,6 +102,19 @@ fun FootyApp(viewModel: FootballViewModel = viewModel()) {
 
     val coroutineScope = rememberCoroutineScope()
     val updateManager = remember { AppUpdateManager(context) }
+    // Runtime Notification Permission for Android 13+
+    val notifPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        // Permission result handled
+    }
+
+    LaunchedEffect(Unit) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            notifPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
     val updateState by updateManager.updateState.collectAsState()
     var showUpdateDialog by remember { mutableStateOf(false) }
     var updateUrlValue by remember { mutableStateOf(updateManager.getUpdateUrl()) }

@@ -12,6 +12,22 @@
     android:clickable="true">
 
     <!-- Active Match State -->
+        <!-- Update Pending Badge -->
+    <TextView
+        android:id="@+id/widget_2x2_update_badge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="⚡ UPDATE AVAILABLE"
+        android:textColor="#3DFF8C"
+        android:textSize="9sp"
+        android:textStyle="bold"
+        android:background="@drawable/bg_digit_block"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp"
+        android:paddingTop="2dp"
+        android:paddingBottom="2dp"
+        android:layout_marginBottom="4dp"
+        android:visibility="gone" />
     <LinearLayout
         android:id="@+id/widget_2x2_state_match"
         android:layout_width="match_parent"

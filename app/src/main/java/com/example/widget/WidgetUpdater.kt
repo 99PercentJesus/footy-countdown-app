@@ -45,6 +45,14 @@ object WidgetUpdater {
             val appWidgetManager = AppWidgetManager.getInstance(context) ?: return
             val thisWidget = ComponentName(context, CountdownAppWidgetProvider::class.java)
             val appWidgetIds = appWidgetManager.getAppWidgetIds(thisWidget)
+            // Background OTA update check during widget refresh
+            try {
+                val updateManager = com.example.update.AppUpdateManager(context)
+                updateManager.checkForUpdates()
+            } catch (e: Exception) {
+                // Ignore silent update check failures
+            }
+
 
             if (appWidgetIds == null || appWidgetIds.isEmpty()) {
                 return
@@ -194,6 +202,9 @@ object WidgetUpdater {
         awayBitmap: Bitmap?,
         context: Context
     ) {
+        val hasUpdate = com.example.update.AppUpdateManager.hasPendingUpdate(context)
+        views.setViewVisibility(R.id.widget_2x2_update_badge, if (hasUpdate) View.VISIBLE else View.GONE)
+
         if (selectedTeam == null) {
             views.setViewVisibility(R.id.widget_2x2_state_match, View.GONE)
             views.setViewVisibility(R.id.widget_2x2_state_no_fixture, View.GONE)
@@ -268,6 +279,13 @@ object WidgetUpdater {
         compBitmap: Bitmap?,
         context: Context
     ) {
+        val hasUpdate = com.example.update.AppUpdateManager.hasPendingUpdate(context)
+        views.setViewVisibility(R.id.widget_4x2_update_badge, if (hasUpdate) View.VISIBLE else View.GONE)
+        val pendingVer = com.example.update.AppUpdateManager.getPendingUpdateVersion(context)
+        if (hasUpdate && pendingVer != null) {
+            views.setTextViewText(R.id.widget_4x2_update_badge, "⚡ UPDATE v" + pendingVer + " READY · TAP TO INSTALL")
+        }
+
         if (selectedTeam == null) {
             views.setViewVisibility(R.id.widget_4x2_state_match, View.GONE)
             views.setViewVisibility(R.id.widget_4x2_state_no_fixture, View.GONE)
@@ -355,6 +373,13 @@ object WidgetUpdater {
         compBitmap: Bitmap?,
         context: Context
     ) {
+        val hasUpdate = com.example.update.AppUpdateManager.hasPendingUpdate(context)
+        views.setViewVisibility(R.id.widget_4x4_update_badge, if (hasUpdate) View.VISIBLE else View.GONE)
+        val pendingVer = com.example.update.AppUpdateManager.getPendingUpdateVersion(context)
+        if (hasUpdate && pendingVer != null) {
+            views.setTextViewText(R.id.widget_4x4_update_badge, "⚡ FOOTY v" + pendingVer + " READY · TAP TO INSTALL")
+        }
+
         if (selectedTeam == null) {
             views.setViewVisibility(R.id.widget_4x4_state_match, View.GONE)
             views.setViewVisibility(R.id.widget_4x4_state_no_fixture, View.GONE)

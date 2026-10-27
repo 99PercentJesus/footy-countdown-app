@@ -1,4 +1,10 @@
 package com.example.update
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import androidx.core.app.NotificationCompat
+import com.example.MainActivity
+import com.example.R
 
 import android.content.Context
 import android.content.Intent
@@ -36,6 +42,44 @@ class AppUpdateManager(private val context: Context) {
         const val PREF_UPDATE_URL = "ota_manifest_url"
         // Default update URL pointing to your repository's latest release
         const val DEFAULT_UPDATE_URL = "https://api.github.com/repos/99PercentJesus/footy-countdown-app/releases/latest"
+        const val PREF_PENDING_VERSION = "pending_update_version"
+
+        fun hasPendingUpdate(context: Context): Boolean {
+            val prefs = context.getSharedPreferences("ota_update_prefs", Context.MODE_PRIVATE)
+            val pendingVer = prefs.getString(PREF_PENDING_VERSION, null) ?: return false
+            return isNewerVersionStatic(pendingVer, BuildConfig.VERSION_NAME)
+        }
+
+        fun getPendingUpdateVersion(context: Context): String? {
+            val prefs = context.getSharedPreferences("ota_update_prefs", Context.MODE_PRIVATE)
+            val pendingVer = prefs.getString(PREF_PENDING_VERSION, null) ?: return null
+            return if (isNewerVersionStatic(pendingVer, BuildConfig.VERSION_NAME)) pendingVer else null
+        }
+
+        fun clearPendingUpdate(context: Context) {
+            context.getSharedPreferences("ota_update_prefs", Context.MODE_PRIVATE)
+                .edit().remove(PREF_PENDING_VERSION).apply()
+        }
+
+        fun isNewerVersionStatic(newVersionName: String, currentVersionName: String): Boolean {
+            try {
+                val cleanNew = newVersionName.removePrefix("v").removePrefix("V").trim()
+                val cleanCurr = currentVersionName.removePrefix("v").removePrefix("V").trim()
+                val newParts = cleanNew.split(".").mapNotNull { it.filter { ch -> ch.isDigit() }.toIntOrNull() }
+                val currParts = cleanCurr.split(".").mapNotNull { it.filter { ch -> ch.isDigit() }.toIntOrNull() }
+                val maxLen = maxOf(newParts.size, currParts.size)
+                for (i in 0 until maxLen) {
+                    val n = if (i < newParts.size) newParts[i] else 0
+                    val c = if (i < currParts.size) currParts[i] else 0
+                    if (n > c) return true
+                    if (n < c) return false
+                }
+                return false
+            } catch (e: Exception) {
+                return false
+            }
+        }
+
     }
 
     fun getUpdateUrl(): String {
@@ -86,8 +130,11 @@ class AppUpdateManager(private val context: Context) {
 
                     val isNewer = isNewerVersion(updateInfo.versionName, BuildConfig.VERSION_NAME, updateInfo.versionCode, BuildConfig.VERSION_CODE)
                     if (isNewer) {
+                        prefs.edit().putString(PREF_PENDING_VERSION, updateInfo.versionName).apply()
+                        postUpdateNotification(context, updateInfo)
                         _updateState.value = UpdateUiState.UpdateAvailable(updateInfo)
                     } else {
+                        prefs.edit().remove(PREF_PENDING_VERSION).apply()
                         _updateState.value = UpdateUiState.UpToDate
                     }
                 }
@@ -274,6 +321,48 @@ class AppUpdateManager(private val context: Context) {
             return false
         } catch (e: Exception) {
             return newCode > currentCode
+        }
+    }
+
+    private fun postUpdateNotification(context: Context, info: UpdateInfo) {
+        try {
+            val channelId = "app_updates_channel"
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(
+                    channelId,
+                    "App Updates",
+                    NotificationManager.IMPORTANCE_DEFAULT
+                ).apply {
+                    description = "Notifications for new Footy app releases"
+                }
+                notificationManager.createNotificationChannel(channel)
+            }
+
+            val intent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra("auto_show_update", true)
+            }
+            val pendingIntent = PendingIntent.getActivity(
+                context,
+                2001,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val notification = NotificationCompat.Builder(context, channelId)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle("Footy Update Available (v" + info.versionName + ")")
+                .setContentText("A new version of Footy is ready. Tap to install the latest update!")
+                .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setContentIntent(pendingIntent)
+                .build()
+
+            notificationManager.notify(101, notification)
+        } catch (e: Exception) {
+            // Ignore
         }
     }
 }
