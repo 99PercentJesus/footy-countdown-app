@@ -101,8 +101,14 @@ class FootballRepository(
         val cached = footballDao.getCachedMatch(teamId)
         val now = System.currentTimeMillis()
 
-        // Rate limit: Check if fetched within 24 hours
-        if (!force && cached != null && (now - cached.lastFetched) < CACHE_DURATION_MS) {
+        // Helper to check if cached match is still valid/in future
+        val isExpired = cached?.let {
+            val kickoff = parseUtcMillis(it.utcDate)
+            kickoff > 0 && (now - kickoff) > (150 * 60 * 1000L) // > 2.5 hours past kickoff
+        } ?: false
+
+        // Rate limit: Check if fetched within 24 hours, provided it isn't expired
+        if (!force && cached != null && !isExpired && (now - cached.lastFetched) < CACHE_DURATION_MS) {
             Log.d(TAG, "Using cached match for team $teamId. Cached within 24h.")
             return Result.success(cached)
         }
@@ -113,65 +119,79 @@ class FootballRepository(
             ?: BuildConfig.FOOTBALL_API_KEY.trim().ifEmpty { null }
             ?: ""
 
-        if (apiKey.isEmpty() || apiKey == "YOUR_FOOTBALL_API_KEY_HERE" || apiKey == "MY_GEMINI_API_KEY") {
-            Log.d(TAG, "No valid football API key configured. Using upcoming match schedule.")
-            val fallback = cached ?: FallbackMatches.getForTeam(teamId)
-            if (fallback != null) {
-                footballDao.insertCachedMatch(fallback)
-                return Result.success(fallback)
+        // 1. If valid football-data.org API key, attempt primary API
+        if (apiKey.isNotEmpty() && apiKey != "YOUR_FOOTBALL_API_KEY_HERE" && apiKey != "MY_GEMINI_API_KEY") {
+            try {
+                Log.d(TAG, "Fetching match for team $teamId from network...")
+                val response = apiService.getTeamMatches(teamId = teamId, apiKey = apiKey, status = null)
+                val nextMatch = response.matches
+                    .filter { (it.status == "SCHEDULED" || it.status == "TIMED" || it.status == "LIVE" || it.status == "IN_PLAY" || it.status == "PAUSED") && it.utcDate != null }
+                    .minByOrNull { it.utcDate ?: "" }
+
+                if (nextMatch != null) {
+                    val cachedMatch = CachedMatchEntity(
+                        id = nextMatch.id ?: (1000000 + teamId),
+                        teamId = teamId,
+                        utcDate = nextMatch.utcDate ?: "",
+                        homeTeamName = nextMatch.homeTeam?.name ?: "TBD",
+                        homeTeamShort = nextMatch.homeTeam?.shortName ?: nextMatch.homeTeam?.name ?: "TBD",
+                        homeTeamCrest = nextMatch.homeTeam?.crest,
+                        awayTeamName = nextMatch.awayTeam?.name ?: "TBD",
+                        awayTeamShort = nextMatch.awayTeam?.shortName ?: nextMatch.awayTeam?.name ?: "TBD",
+                        awayTeamCrest = nextMatch.awayTeam?.crest,
+                        competitionName = nextMatch.competition?.name,
+                        competitionEmblem = nextMatch.competition?.emblem,
+                        lastFetched = now
+                    )
+                    footballDao.insertCachedMatch(cachedMatch)
+                    return Result.success(cachedMatch)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Primary API fetch failed for team $teamId: ${e.message}")
             }
-            return Result.failure(Exception("No API key configured. Please enter a valid API key from football-data.org."))
         }
 
-        return try {
-            Log.d(TAG, "Fetching match for team $teamId from network...")
-            val response = apiService.getTeamMatches(teamId = teamId, apiKey = apiKey, status = null)
-            Log.d(TAG, "Fetched ${response.matches.size} matches for team $teamId. Statuses: ${response.matches.map { it.status }.distinct()}")
-            val nextMatch = response.matches
-                .filter { (it.status == "SCHEDULED" || it.status == "TIMED" || it.status == "LIVE" || it.status == "IN_PLAY" || it.status == "PAUSED") && it.utcDate != null }
-                .minByOrNull { it.utcDate ?: "" } // Nearest match
-
-            if (nextMatch != null) {
-                val cachedMatch = CachedMatchEntity(
-                    id = nextMatch.id ?: (1000000 + teamId),
-                    teamId = teamId,
-                    utcDate = nextMatch.utcDate ?: "",
-                    homeTeamName = nextMatch.homeTeam?.name ?: "TBD",
-                    homeTeamShort = nextMatch.homeTeam?.shortName ?: nextMatch.homeTeam?.name ?: "TBD",
-                    homeTeamCrest = nextMatch.homeTeam?.crest,
-                    awayTeamName = nextMatch.awayTeam?.name ?: "TBD",
-                    awayTeamShort = nextMatch.awayTeam?.shortName ?: nextMatch.awayTeam?.name ?: "TBD",
-                    awayTeamCrest = nextMatch.awayTeam?.crest,
-                    competitionName = nextMatch.competition?.name,
-                    competitionEmblem = nextMatch.competition?.emblem,
-                    lastFetched = now
-                )
-                footballDao.insertCachedMatch(cachedMatch)
-                Result.success(cachedMatch)
-            } else {
-                // No scheduled matches found via network, check fallback schedule
-                val fallback = FallbackMatches.getForTeam(teamId)
-                if (fallback != null) {
-                    footballDao.insertCachedMatch(fallback)
-                    Result.success(fallback)
-                } else {
-                    footballDao.deleteCachedMatchForTeam(teamId)
-                    Result.success(null)
-                }
+        // 2. Fetch from Public Football Schedule (real-time, no key required)
+        try {
+            val publicMatch = PublicFootballScheduleFetcher.fetchUpcomingMatch(teamId)
+            if (publicMatch != null) {
+                Log.d(TAG, "Successfully fetched live schedule from public feed: ${publicMatch.homeTeamShort} vs ${publicMatch.awayTeamShort} at ${publicMatch.utcDate}")
+                footballDao.insertCachedMatch(publicMatch)
+                return Result.success(publicMatch)
             }
         } catch (e: Exception) {
-            Log.w(TAG, "Network fetch unavailable for team $teamId (${e.message}). Falling back to schedule.")
-            if (cached != null) {
-                // Gracefully fall back to cache even if stale
-                Result.success(cached)
-            } else {
-                val fallback = FallbackMatches.getForTeam(teamId)
-                if (fallback != null) {
-                    footballDao.insertCachedMatch(fallback)
-                    Result.success(fallback)
-                } else {
-                    Result.failure(e)
+            Log.w(TAG, "Public schedule fetch failed for team $teamId: ${e.message}")
+        }
+
+        // 3. Fallback: If cached match exists and isn't expired, retain it
+        if (cached != null && !isExpired) {
+            return Result.success(cached)
+        }
+
+        // 4. Generate dynamic upcoming fallback match
+        val fallback = FallbackMatches.getForTeam(teamId)
+        if (fallback != null) {
+            footballDao.insertCachedMatch(fallback)
+            return Result.success(fallback)
+        }
+
+        return Result.failure(Exception("No upcoming match schedule available."))
+    }
+
+    private fun parseUtcMillis(utcStr: String): Long {
+        return try {
+            val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US).apply {
+                timeZone = java.util.TimeZone.getTimeZone("UTC")
+            }
+            sdf.parse(utcStr)?.time ?: 0L
+        } catch (e: Exception) {
+            try {
+                val sdf2 = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'", java.util.Locale.US).apply {
+                    timeZone = java.util.TimeZone.getTimeZone("UTC")
                 }
+                sdf2.parse(utcStr)?.time ?: 0L
+            } catch (e2: Exception) {
+                0L
             }
         }
     }

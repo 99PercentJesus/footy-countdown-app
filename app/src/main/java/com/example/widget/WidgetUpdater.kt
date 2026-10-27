@@ -54,7 +54,7 @@ object WidgetUpdater {
             val selectedTeam = dao.getActiveTeam()
             var cachedMatch = selectedTeam?.let { dao.getCachedMatch(it.teamId) }
 
-            // Auto-refresh stale matches: if match kickoff has passed or match is older than 2 hours past kickoff
+            // Auto-refresh stale matches: if match kickoff has passed or match is older than 2.5 hours past kickoff
             if (selectedTeam != null && cachedMatch != null) {
                 val matchKickoff = parseUtcDate(cachedMatch.utcDate)?.time ?: 0L
                 val timeSinceKickoff = System.currentTimeMillis() - matchKickoff
@@ -63,8 +63,13 @@ object WidgetUpdater {
                     try {
                         val repository = FootballRepository(context.applicationContext, dao)
                         val fetchResult = repository.fetchNextMatch(selectedTeam.teamId, force = true)
-                        fetchResult.getOrNull()?.let { updatedMatch ->
+                        val updatedMatch = fetchResult.getOrNull()
+                        if (updatedMatch != null) {
                             cachedMatch = updatedMatch
+                        } else if (timeSinceKickoff > MATCH_WINDOW_MS) {
+                            // If it's well past full time and no next match came back yet, discard stale match
+                            dao.deleteCachedMatchForTeam(selectedTeam.teamId)
+                            cachedMatch = null
                         }
                     } catch (e: Exception) {
                         Log.w(TAG, "Failed auto-refreshing match after kickoff: ${e.message}")
