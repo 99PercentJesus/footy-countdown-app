@@ -386,35 +386,9 @@ object FallbackMatches {
                 lastFetched = now
             )
 
-            // National Teams (Protected / Restricted on free tier)
-            762 -> CachedMatchEntity(
-                id = 900762,
-                teamId = 762,
-                utcDate = getUpcomingDate(4, 23),
-                homeTeamName = "Argentina",
-                homeTeamShort = "Argentina",
-                homeTeamCrest = "https://crests.football-data.org/762.png",
-                awayTeamName = "Brazil",
-                awayTeamShort = "Brazil",
-                awayTeamCrest = "https://crests.football-data.org/764.png",
-                competitionName = "FIFA World Cup Qualifiers",
-                competitionEmblem = "https://crests.football-data.org/WC.png",
-                lastFetched = now
-            )
-            764 -> CachedMatchEntity(
-                id = 900764,
-                teamId = 764,
-                utcDate = getUpcomingDate(4, 23),
-                homeTeamName = "Argentina",
-                homeTeamShort = "Argentina",
-                homeTeamCrest = "https://crests.football-data.org/762.png",
-                awayTeamName = "Brazil",
-                awayTeamShort = "Brazil",
-                awayTeamCrest = "https://crests.football-data.org/764.png",
-                competitionName = "FIFA World Cup Qualifiers",
-                competitionEmblem = "https://crests.football-data.org/WC.png",
-                lastFetched = now
-            )
+            // National Teams - If no official FIFA match is scheduled, return null so app indicates 'No Fixture Scheduled'
+            762 -> null // Argentina: No active tournament match currently scheduled
+            764 -> null // Brazil: No active tournament match currently scheduled
             770 -> CachedMatchEntity(
                 id = 900770,
                 teamId = 770,

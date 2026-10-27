@@ -84,8 +84,8 @@ class AppUpdateManager(private val context: Context) {
                         return@withContext
                     }
 
-                    val currentVersionCode = BuildConfig.VERSION_CODE
-                    if (updateInfo.versionCode > currentVersionCode) {
+                    val isNewer = isNewerVersion(updateInfo.versionName, BuildConfig.VERSION_NAME, updateInfo.versionCode, BuildConfig.VERSION_CODE)
+                    if (isNewer) {
                         _updateState.value = UpdateUiState.UpdateAvailable(updateInfo)
                     } else {
                         _updateState.value = UpdateUiState.UpToDate
@@ -254,6 +254,26 @@ class AppUpdateManager(private val context: Context) {
             context.startActivity(intent)
         } catch (e: Exception) {
             _updateState.value = UpdateUiState.Error("Failed to launch installer: ${e.localizedMessage}")
+        }
+    }
+    private fun isNewerVersion(newVersionName: String, currentVersionName: String, newCode: Int, currentCode: Int): Boolean {
+        try {
+            val cleanNew = newVersionName.removePrefix("v").removePrefix("V").trim()
+            val cleanCurr = currentVersionName.removePrefix("v").removePrefix("V").trim()
+
+            val newParts = cleanNew.split(".").mapNotNull { it.filter { ch -> ch.isDigit() }.toIntOrNull() }
+            val currParts = cleanCurr.split(".").mapNotNull { it.filter { ch -> ch.isDigit() }.toIntOrNull() }
+
+            val maxLen = maxOf(newParts.size, currParts.size)
+            for (i in 0 until maxLen) {
+                val n = if (i < newParts.size) newParts[i] else 0
+                val c = if (i < currParts.size) currParts[i] else 0
+                if (n > c) return true
+                if (n < c) return false
+            }
+            return false
+        } catch (e: Exception) {
+            return newCode > currentCode
         }
     }
 }

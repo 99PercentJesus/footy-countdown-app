@@ -117,6 +117,19 @@ fun FootyApp(viewModel: FootballViewModel = viewModel()) {
         }
     }
 
+    // Automatically check for OTA updates on app launch
+    LaunchedEffect(Unit) {
+        val targetUrl = updateManager.getUpdateUrl()
+        updateManager.checkForUpdates(targetUrl)
+    }
+
+    // Show update dialog whenever an update is discovered
+    LaunchedEffect(updateState) {
+        if (updateState is UpdateUiState.UpdateAvailable) {
+            showUpdateDialog = true
+        }
+    }
+
     // Trigger widget refresh when config changes
     LaunchedEffect(selectedTeam, cachedMatch, selectedTeams) {
         WidgetUpdater.updateAllWidgets(context)

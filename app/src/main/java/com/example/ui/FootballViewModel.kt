@@ -64,10 +64,10 @@ class FootballViewModel(application: Application) : AndroidViewModel(application
             }
         }
 
-        // Trigger non-forced fetch of selected team on start to keep data warm
+        // Trigger fresh fetch on start to keep match data completely live and up-to-date
         viewModelScope.launch {
             selectedTeam.filterNotNull().collectLatest { team ->
-                refreshMatch(force = false)
+                refreshMatch(force = true)
             }
         }
 

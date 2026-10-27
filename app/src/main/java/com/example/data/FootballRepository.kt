@@ -19,7 +19,38 @@ class FootballRepository(
     val selectedTeam: Flow<SelectedTeamEntity?> = footballDao.getActiveTeamFlow()
     val selectedTeams: Flow<List<SelectedTeamEntity>> = footballDao.getSelectedTeamsFlow()
 
-    fun getCachedMatchFlow(teamId: Int): Flow<CachedMatchEntity?> = footballDao.getCachedMatchFlow(teamId)
+    fun getCachedMatchFlow(teamId: Int): Flow<CachedMatchEntity?> = kotlinx.coroutines.flow.flow {
+        // Emit current cached if not expired
+        val initial = footballDao.getCachedMatch(teamId)
+        val now = System.currentTimeMillis()
+        if (initial != null) {
+            val kickoff = parseUtcMillis(initial.utcDate)
+            if (kickoff > 0 && (now - kickoff) > (150 * 60 * 1000L)) {
+                // Discard expired match from DB
+                footballDao.deleteCachedMatchForTeam(teamId)
+                emit(null)
+            } else {
+                emit(initial)
+            }
+        } else {
+            emit(null)
+        }
+        // Then collect changes
+        footballDao.getCachedMatchFlow(teamId).collect { match ->
+            if (match != null) {
+                val kickoff = parseUtcMillis(match.utcDate)
+                val currNow = System.currentTimeMillis()
+                if (kickoff > 0 && (currNow - kickoff) > (150 * 60 * 1000L)) {
+                    footballDao.deleteCachedMatchForTeam(teamId)
+                    emit(null)
+                } else {
+                    emit(match)
+                }
+            } else {
+                emit(null)
+            }
+        }
+    }
 
     /**
      * Add a favorite team. Sets it as active if there is no current active team.
