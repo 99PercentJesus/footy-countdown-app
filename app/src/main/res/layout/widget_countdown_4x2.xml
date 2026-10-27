@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 3x2 / 4x2 Horizontal Wide: Competition bar, full team names, large crests, and wide digital countdown -->
+<!-- 3x2 & 4x2 Wide Scoreboard Widget -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/widget_container_4x2"
+    android:id="@+id/widget_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -12,29 +12,30 @@
     android:clickable="true">
 
     <!-- Active Match State -->
-        <!-- Update Pending Badge -->
-    <TextView
-        android:id="@+id/widget_4x2_update_badge"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="⚡ NEW UPDATE PENDING · TAP TO INSTALL"
-        android:textColor="#3DFF8C"
-        android:textSize="10sp"
-        android:textStyle="bold"
-        android:background="@drawable/bg_digit_block"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
-        android:paddingTop="3dp"
-        android:paddingBottom="3dp"
-        android:layout_marginBottom="6dp"
-        android:visibility="gone" />
     <LinearLayout
-        android:id="@+id/widget_4x2_state_match"
+        android:id="@+id/widget_state_match"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:gravity="center"
         android:visibility="visible">
+
+        <!-- Optional Update Banner -->
+        <TextView
+            android:id="@+id/widget_update_badge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="⚡ NEW UPDATE PENDING · TAP TO INSTALL"
+            android:textColor="#3DFF8C"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:background="@drawable/bg_digit_block"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="3dp"
+            android:paddingBottom="3dp"
+            android:layout_marginBottom="6dp"
+            android:visibility="gone" />
 
         <!-- Top Row: Competition & Kickoff Datetime -->
         <LinearLayout
@@ -52,7 +53,7 @@
                 android:gravity="center_vertical">
 
                 <ImageView
-                    android:id="@+id/widget_4x2_comp_emblem"
+                    android:id="@+id/widget_comp_emblem"
                     android:layout_width="14dp"
                     android:layout_height="14dp"
                     android:layout_marginEnd="6dp"
@@ -60,7 +61,7 @@
                     android:visibility="gone" />
 
                 <TextView
-                    android:id="@+id/widget_4x2_competition_name"
+                    android:id="@+id/widget_competition_name"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="LALIGA"
@@ -73,7 +74,7 @@
             </LinearLayout>
 
             <TextView
-                android:id="@+id/widget_4x2_kickoff_datetime"
+                android:id="@+id/widget_kickoff_datetime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="SAT 31 OCT · 20:00"
@@ -102,7 +103,7 @@
                 android:gravity="center_vertical">
 
                 <ImageView
-                    android:id="@+id/widget_4x2_home_crest"
+                    android:id="@+id/widget_home_crest"
                     android:layout_width="36dp"
                     android:layout_height="36dp"
                     android:layout_marginEnd="8dp"
@@ -114,7 +115,7 @@
                     android:orientation="vertical">
 
                     <TextView
-                        android:id="@+id/widget_4x2_home_name"
+                        android:id="@+id/widget_home_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Barcelona"
@@ -137,6 +138,7 @@
 
             <!-- VS -->
             <TextView
+                android:id="@+id/widget_vs_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="VS"
@@ -161,7 +163,7 @@
                     android:gravity="end">
 
                     <TextView
-                        android:id="@+id/widget_4x2_away_name"
+                        android:id="@+id/widget_away_name"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Alavés"
@@ -182,7 +184,7 @@
                 </LinearLayout>
 
                 <ImageView
-                    android:id="@+id/widget_4x2_away_crest"
+                    android:id="@+id/widget_away_crest"
                     android:layout_width="36dp"
                     android:layout_height="36dp"
                     android:layout_marginStart="8dp"
@@ -192,7 +194,7 @@
 
         <!-- Bottom Row: Unified Live Countdown Chronometer -->
         <LinearLayout
-            android:id="@+id/widget_4x2_blocks_container"
+            android:id="@+id/widget_blocks_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
@@ -204,7 +206,7 @@
             android:gravity="center">
 
             <Chronometer
-                android:id="@+id/widget_4x2_chronometer"
+                android:id="@+id/widget_chronometer"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="00:00:00"
@@ -212,23 +214,31 @@
                 android:textSize="26sp"
                 android:textStyle="bold"
                 android:fontFamily="monospace"
+                android:singleLine="true"
                 android:gravity="center"
                 android:letterSpacing="0.06" />
 
             <TextView
-                android:id="@+id/widget_4x2_chronometer_units"
+                android:id="@+id/widget_chronometer_units"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="TOTAL HOURS : MIN : SEC"
                 android:textColor="#667085"
                 android:textSize="10sp"
                 android:textStyle="bold"
+                android:singleLine="true"
                 android:letterSpacing="0.1" />
         </LinearLayout>
 
+        <TextView
+            android:id="@+id/widget_countdown_tag"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone" />
+
         <!-- Live Container -->
         <LinearLayout
-            android:id="@+id/widget_4x2_live_container"
+            android:id="@+id/widget_live_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_digit_block"
@@ -237,7 +247,7 @@
             android:visibility="gone">
 
             <TextView
-                android:id="@+id/widget_4x2_live_status"
+                android:id="@+id/widget_live_status"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="IN PLAY · LIVE"
@@ -250,7 +260,7 @@
 
     <!-- State 2: No Fixture -->
     <LinearLayout
-        android:id="@+id/widget_4x2_state_no_fixture"
+        android:id="@+id/widget_state_no_fixture"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
@@ -258,7 +268,7 @@
         android:visibility="gone">
 
         <TextView
-            android:id="@+id/widget_4x2_no_fixture_team"
+            android:id="@+id/widget_no_fixture_team"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="BARCELONA"
@@ -278,7 +288,7 @@
 
     <!-- State 3: Empty -->
     <LinearLayout
-        android:id="@+id/widget_4x2_state_empty"
+        android:id="@+id/widget_state_empty"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"

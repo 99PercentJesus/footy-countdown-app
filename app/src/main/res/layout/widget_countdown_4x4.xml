@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 4x4 Large Showcase: Big Crests, Full Matchday Branding, Huge Stadium-Style Countdown Clock -->
+<!-- 4x4 Large Showcase Widget -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/widget_container_4x4"
+    android:id="@+id/widget_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -12,29 +12,30 @@
     android:clickable="true">
 
     <!-- Active Match State -->
-        <!-- Update Pending Badge -->
-    <TextView
-        android:id="@+id/widget_4x4_update_badge"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="⚡ NEW UPDATE PENDING · TAP TO INSTALL"
-        android:textColor="#3DFF8C"
-        android:textSize="11sp"
-        android:textStyle="bold"
-        android:background="@drawable/bg_digit_block"
-        android:paddingStart="10dp"
-        android:paddingEnd="10dp"
-        android:paddingTop="4dp"
-        android:paddingBottom="4dp"
-        android:layout_marginBottom="8dp"
-        android:visibility="gone" />
     <LinearLayout
-        android:id="@+id/widget_4x4_state_match"
+        android:id="@+id/widget_state_match"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:gravity="center"
         android:visibility="visible">
+
+        <!-- Optional Update Banner -->
+        <TextView
+            android:id="@+id/widget_update_badge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="⚡ NEW UPDATE PENDING · TAP TO INSTALL"
+            android:textColor="#3DFF8C"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:background="@drawable/bg_digit_block"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone" />
 
         <!-- Header: League emblem + Competition name + Kickoff Date -->
         <LinearLayout
@@ -52,7 +53,7 @@
                 android:gravity="center_vertical">
 
                 <ImageView
-                    android:id="@+id/widget_4x4_comp_emblem"
+                    android:id="@+id/widget_comp_emblem"
                     android:layout_width="20dp"
                     android:layout_height="20dp"
                     android:layout_marginEnd="8dp"
@@ -60,7 +61,7 @@
                     android:visibility="gone" />
 
                 <TextView
-                    android:id="@+id/widget_4x4_competition_name"
+                    android:id="@+id/widget_competition_name"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="LALIGA"
@@ -73,7 +74,7 @@
             </LinearLayout>
 
             <TextView
-                android:id="@+id/widget_4x4_kickoff_datetime"
+                android:id="@+id/widget_kickoff_datetime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="SAT 31 OCT · 20:00"
@@ -102,14 +103,14 @@
                 android:gravity="center">
 
                 <ImageView
-                    android:id="@+id/widget_4x4_home_crest"
-                    android:layout_width="64dp"
-                    android:layout_height="64dp"
+                    android:id="@+id/widget_home_crest"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
                     android:layout_marginBottom="8dp"
                     android:scaleType="fitCenter" />
 
                 <TextView
-                    android:id="@+id/widget_4x4_home_name"
+                    android:id="@+id/widget_home_name"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Barcelona"
@@ -140,6 +141,7 @@
                 android:layout_marginEnd="12dp">
 
                 <TextView
+                    android:id="@+id/widget_vs_label"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="VS"
@@ -158,14 +160,14 @@
                 android:gravity="center">
 
                 <ImageView
-                    android:id="@+id/widget_4x4_away_crest"
-                    android:layout_width="64dp"
-                    android:layout_height="64dp"
+                    android:id="@+id/widget_away_crest"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
                     android:layout_marginBottom="8dp"
                     android:scaleType="fitCenter" />
 
                 <TextView
-                    android:id="@+id/widget_4x4_away_name"
+                    android:id="@+id/widget_away_name"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Alavés"
@@ -189,7 +191,7 @@
 
         <!-- Stadium Style Giant Digital Clock -->
         <LinearLayout
-            android:id="@+id/widget_4x4_blocks_container"
+            android:id="@+id/widget_blocks_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
@@ -216,7 +218,7 @@
                     android:layout_marginEnd="6dp" />
 
                 <TextView
-                    android:id="@+id/widget_4x4_countdown_tag"
+                    android:id="@+id/widget_countdown_tag"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="COUNTDOWN TO KICKOFF"
@@ -227,32 +229,34 @@
             </LinearLayout>
 
             <Chronometer
-                android:id="@+id/widget_4x4_chronometer"
+                android:id="@+id/widget_chronometer"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="00:00:00"
                 android:textColor="#3DFF8C"
-                android:textSize="44sp"
+                android:textSize="40sp"
                 android:textStyle="bold"
                 android:fontFamily="monospace"
+                android:singleLine="true"
                 android:gravity="center"
                 android:letterSpacing="0.08" />
 
             <TextView
-                android:id="@+id/widget_4x4_chronometer_units"
+                android:id="@+id/widget_chronometer_units"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="TOTAL HOURS : MIN : SEC"
                 android:textColor="#667085"
                 android:textSize="12sp"
                 android:textStyle="bold"
+                android:singleLine="true"
                 android:letterSpacing="0.12"
                 android:layout_marginTop="4dp" />
         </LinearLayout>
 
         <!-- Live Container -->
         <LinearLayout
-            android:id="@+id/widget_4x4_live_container"
+            android:id="@+id/widget_live_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_digit_block"
@@ -261,7 +265,7 @@
             android:visibility="gone">
 
             <TextView
-                android:id="@+id/widget_4x4_live_status"
+                android:id="@+id/widget_live_status"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="IN PLAY · SECOND HALF"
@@ -274,7 +278,7 @@
 
     <!-- State 2: No Fixture -->
     <LinearLayout
-        android:id="@+id/widget_4x4_state_no_fixture"
+        android:id="@+id/widget_state_no_fixture"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
@@ -282,7 +286,7 @@
         android:visibility="gone">
 
         <TextView
-            android:id="@+id/widget_4x4_no_fixture_team"
+            android:id="@+id/widget_no_fixture_team"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="BARCELONA"
@@ -313,7 +317,7 @@
 
     <!-- State 3: Empty -->
     <LinearLayout
-        android:id="@+id/widget_4x4_state_empty"
+        android:id="@+id/widget_state_empty"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
