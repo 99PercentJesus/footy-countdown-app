@@ -21,6 +21,12 @@ class CountdownAppWidgetProvider : AppWidgetProvider() {
         triggerAsyncUpdate(context)
     }
 
+    override fun onAppWidgetOptionsChanged(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int, newOptions: android.os.Bundle) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+        Log.d(TAG, "onAppWidgetOptionsChanged for widget $appWidgetId")
+        triggerAsyncUpdate(context)
+    }
+
     override fun onEnabled(context: Context) {
         Log.d(TAG, "onEnabled called. First widget added.")
         triggerAsyncUpdate(context)

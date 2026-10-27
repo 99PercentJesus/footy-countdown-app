@@ -23,8 +23,10 @@ import coil.imageLoader
 import coil.request.ImageRequest
 import com.example.MainActivity
 import com.example.R
+import com.example.data.CachedMatchEntity
 import com.example.data.FootballDatabase
 import com.example.data.FootballRepository
+import com.example.data.SelectedTeamEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
@@ -58,7 +60,6 @@ object WidgetUpdater {
             if (selectedTeam != null && cachedMatch != null) {
                 val matchKickoff = parseUtcDate(cachedMatch.utcDate)?.time ?: 0L
                 val timeSinceKickoff = System.currentTimeMillis() - matchKickoff
-                // If match kicked off in the past, attempt to fetch the latest/next match
                 if (timeSinceKickoff > 0) {
                     try {
                         val repository = FootballRepository(context.applicationContext, dao)
@@ -67,7 +68,6 @@ object WidgetUpdater {
                         if (updatedMatch != null) {
                             cachedMatch = updatedMatch
                         } else if (timeSinceKickoff > MATCH_WINDOW_MS) {
-                            // If it's well past full time and no next match came back yet, discard stale match
                             dao.deleteCachedMatchForTeam(selectedTeam.teamId)
                             cachedMatch = null
                         }
@@ -77,143 +77,359 @@ object WidgetUpdater {
                 }
             }
 
-            for (appWidgetId in appWidgetIds) {
-                val views = RemoteViews(context.packageName, R.layout.widget_countdown)
+            // Pre-load bitmaps for the match
+            var homeBitmap: Bitmap? = null
+            var awayBitmap: Bitmap? = null
+            var compBitmap: Bitmap? = null
 
-                if (selectedTeam == null) {
-                    // State 3: No team picked yet
-                    views.setViewVisibility(R.id.widget_state_match, View.GONE)
-                    views.setViewVisibility(R.id.widget_state_no_fixture, View.GONE)
-                    views.setViewVisibility(R.id.widget_state_empty, View.VISIBLE)
-                } else if (cachedMatch == null) {
-                    // State 2: No fixture scheduled
-                    views.setViewVisibility(R.id.widget_state_match, View.GONE)
-                    views.setViewVisibility(R.id.widget_state_no_fixture, View.VISIBLE)
-                    views.setViewVisibility(R.id.widget_state_empty, View.GONE)
-                    views.setTextViewText(R.id.widget_no_fixture_team, selectedTeam.shortName.uppercase(Locale.getDefault()))
-                } else {
-                    // State 1: Active Match Countdown
-                    views.setViewVisibility(R.id.widget_state_match, View.VISIBLE)
-                    views.setViewVisibility(R.id.widget_state_no_fixture, View.GONE)
-                    views.setViewVisibility(R.id.widget_state_empty, View.GONE)
-
-                    val compName = cachedMatch.competitionName?.uppercase(Locale.getDefault()) ?: "MATCH"
-                    views.setTextViewText(R.id.widget_competition_name, compName)
-
-                    views.setTextViewText(R.id.widget_home_name, cachedMatch.homeTeamShort)
-                    views.setTextViewText(R.id.widget_away_name, cachedMatch.awayTeamShort)
-
-                    // Try to load Competition Emblem
-                    val compEmblemUrl = cachedMatch.competitionEmblem ?: ""
-                    if (compEmblemUrl.isNotEmpty()) {
-                        val compBitmap = bitmapCache[compEmblemUrl] ?: withContext(Dispatchers.IO) {
-                            loadBitmapFromUrl(context, compEmblemUrl)
-                        }?.also { bitmapCache[compEmblemUrl] = it }
-
-                        if (compBitmap != null) {
-                            views.setImageViewBitmap(R.id.widget_comp_emblem, compBitmap)
-                            views.setViewVisibility(R.id.widget_comp_emblem, View.VISIBLE)
-                        } else {
-                            views.setViewVisibility(R.id.widget_comp_emblem, View.GONE)
-                        }
-                    } else {
-                        views.setViewVisibility(R.id.widget_comp_emblem, View.GONE)
-                    }
-
-                    // Try to load Home Crest (with Monogram fallback)
-                    val homeBitmap = if (!cachedMatch.homeTeamCrest.isNullOrEmpty()) {
-                        bitmapCache[cachedMatch.homeTeamCrest] ?: withContext(Dispatchers.IO) {
-                            loadBitmapFromUrl(context, cachedMatch.homeTeamCrest)
-                        }?.also { bitmapCache[cachedMatch.homeTeamCrest] = it }
-                    } else null
-
-                    val finalHomeBitmap = homeBitmap ?: createMonogramBitmap(cachedMatch.homeTeamShort)
-                    views.setImageViewBitmap(R.id.widget_home_crest, finalHomeBitmap)
-                    views.setViewVisibility(R.id.widget_home_crest, View.VISIBLE)
-
-                    // Try to load Away Crest (with Monogram fallback)
-                    val awayBitmap = if (!cachedMatch.awayTeamCrest.isNullOrEmpty()) {
-                        bitmapCache[cachedMatch.awayTeamCrest] ?: withContext(Dispatchers.IO) {
-                            loadBitmapFromUrl(context, cachedMatch.awayTeamCrest)
-                        }?.also { bitmapCache[cachedMatch.awayTeamCrest] = it }
-                    } else null
-
-                    val finalAwayBitmap = awayBitmap ?: createMonogramBitmap(cachedMatch.awayTeamShort)
-                    views.setImageViewBitmap(R.id.widget_away_crest, finalAwayBitmap)
-                    views.setViewVisibility(R.id.widget_away_crest, View.VISIBLE)
-
-                    val kickoffDate = parseUtcDate(cachedMatch.utcDate)
-                    if (kickoffDate != null) {
-                        val kickoffFormat = SimpleDateFormat("EEE d MMM · HH:mm", Locale.US)
-                        views.setTextViewText(R.id.widget_kickoff_datetime, kickoffFormat.format(kickoffDate).uppercase(Locale.US))
-
-                        val diffMs = kickoffDate.time - System.currentTimeMillis()
-
-                        if (diffMs <= 0) {
-                            val timeSinceKickoff = -diffMs
-                            if (timeSinceKickoff <= MATCH_WINDOW_MS) {
-                                // In play state: Match currently active (under 2.5 hours since kickoff)
-                                views.setViewVisibility(R.id.widget_blocks_container, View.GONE)
-                                views.setViewVisibility(R.id.widget_live_container, View.VISIBLE)
-                                views.setTextViewText(R.id.widget_live_status, "IN PLAY · LIVE")
-
-                                // Schedule an alarm at the end of the match window to transition out of in-play
-                                scheduleRefreshAlarm(context, kickoffDate.time + MATCH_WINDOW_MS + 5000L)
-                            } else {
-                                // Match concluded (>2.5 hours since kickoff)
-                                views.setViewVisibility(R.id.widget_blocks_container, View.GONE)
-                                views.setViewVisibility(R.id.widget_live_container, View.VISIBLE)
-                                views.setTextViewText(R.id.widget_live_status, "FULL TIME · FINISHED")
-                            }
-                        } else {
-                            views.setViewVisibility(R.id.widget_blocks_container, View.VISIBLE)
-                            views.setViewVisibility(R.id.widget_live_container, View.GONE)
-
-                            val days = diffMs / (24 * 60 * 60 * 1000)
-                            val totalHours = diffMs / (60 * 60 * 1000)
-
-                            val baseTime = SystemClock.elapsedRealtime() + diffMs
-                            views.setChronometerCountDown(R.id.widget_chronometer, true)
-                            views.setChronometer(R.id.widget_chronometer, baseTime, null, true)
-
-                            if (days >= 1) {
-                                val tagText = if (days == 1L) "MATCH TOMORROW · 1 DAY" else "$days DAYS TO KICKOFF"
-                                views.setTextViewText(R.id.widget_countdown_tag, tagText)
-                                views.setTextViewText(R.id.widget_chronometer_units, "TOTAL HOURS : MIN : SEC")
-
-                                val remainderOfDayMs = diffMs % (24 * 60 * 60 * 1000)
-                                val safeRemainderMs = if (remainderOfDayMs < 1000L) (24 * 60 * 60 * 1000) else remainderOfDayMs
-                                scheduleRefreshAlarm(context, System.currentTimeMillis() + safeRemainderMs)
-                            } else {
-                                // Under 24 hours (Matchday!)
-                                val tagText = if (totalHours >= 2) "🔥 MATCHDAY · KICKOFF TODAY" else "⚡ FINAL COUNTDOWN"
-                                views.setTextViewText(R.id.widget_countdown_tag, tagText)
-                                views.setTextViewText(R.id.widget_chronometer_units, if (totalHours > 0) "HOURS : MIN : SEC" else "MINUTES : SECONDS")
-
-                                scheduleRefreshAlarm(context, kickoffDate.time)
-                            }
-                        }
-                    } else {
-                        views.setTextViewText(R.id.widget_kickoff_datetime, "DATE TBD")
-                        views.setViewVisibility(R.id.widget_blocks_container, View.GONE)
-                        views.setViewVisibility(R.id.widget_live_container, View.VISIBLE)
-                        views.setTextViewText(R.id.widget_live_status, "FIXTURE SCHEDULE PENDING")
-                    }
+            if (cachedMatch != null) {
+                val homeCrest = cachedMatch.homeTeamCrest
+                if (!homeCrest.isNullOrEmpty()) {
+                    homeBitmap = bitmapCache[homeCrest] ?: withContext(Dispatchers.IO) {
+                        loadBitmapFromUrl(context, homeCrest)
+                    }?.also { bitmapCache[homeCrest] = it }
+                }
+                if (homeBitmap == null) {
+                    homeBitmap = createMonogramBitmap(cachedMatch.homeTeamShort)
                 }
 
-                // Dynamic click intent to open Main Application
-                val pendingIntent = PendingIntent.getActivity(
-                    context,
-                    0,
-                    Intent(context, MainActivity::class.java),
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                val awayCrest = cachedMatch.awayTeamCrest
+                if (!awayCrest.isNullOrEmpty()) {
+                    awayBitmap = bitmapCache[awayCrest] ?: withContext(Dispatchers.IO) {
+                        loadBitmapFromUrl(context, awayCrest)
+                    }?.also { bitmapCache[awayCrest] = it }
+                }
+                if (awayBitmap == null) {
+                    awayBitmap = createMonogramBitmap(cachedMatch.awayTeamShort)
+                }
+
+                val compEmblemUrl = cachedMatch.competitionEmblem ?: ""
+                if (compEmblemUrl.isNotEmpty()) {
+                    compBitmap = bitmapCache[compEmblemUrl] ?: withContext(Dispatchers.IO) {
+                        loadBitmapFromUrl(context, compEmblemUrl)
+                    }?.also { bitmapCache[compEmblemUrl] = it }
+                }
+            }
+
+            val pendingIntent = PendingIntent.getActivity(
+                context,
+                0,
+                Intent(context, MainActivity::class.java),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            // Update each widget based on its dimension/options
+            for (appWidgetId in appWidgetIds) {
+                val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
+                val minWidth = options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 180) ?: 180
+                val minHeight = options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 110) ?: 110
+
+                val views = createSizedRemoteViews(
+                    context = context,
+                    minWidth = minWidth,
+                    minHeight = minHeight,
+                    selectedTeam = selectedTeam,
+                    cachedMatch = cachedMatch,
+                    homeBitmap = homeBitmap,
+                    awayBitmap = awayBitmap,
+                    compBitmap = compBitmap,
+                    pendingIntent = pendingIntent
                 )
-                views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
 
                 appWidgetManager.updateAppWidget(appWidgetId, views)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error updating widgets", e)
+        }
+    }
+
+    private fun createSizedRemoteViews(
+        context: Context,
+        minWidth: Int,
+        minHeight: Int,
+        selectedTeam: SelectedTeamEntity?,
+        cachedMatch: CachedMatchEntity?,
+        homeBitmap: Bitmap?,
+        awayBitmap: Bitmap?,
+        compBitmap: Bitmap?,
+        pendingIntent: PendingIntent
+    ): RemoteViews {
+        // Size Categories:
+        // 2x2 Square: minWidth < 200 && minHeight < 170
+        // 4x4 / 3x3 Large: minHeight >= 180 (regardless of width, tall/square showcase)
+        // 3x2 / 4x2 Wide: minWidth >= 200 && minHeight < 180
+        val isCompact2x2 = minWidth < 200 && minHeight < 180
+        val isLarge4x4 = minHeight >= 180
+
+        val layoutId = when {
+            isCompact2x2 -> R.layout.widget_countdown_2x2
+            isLarge4x4 -> R.layout.widget_countdown_4x4
+            else -> R.layout.widget_countdown_4x2
+        }
+
+        val views = RemoteViews(context.packageName, layoutId)
+
+        if (isCompact2x2) {
+            populate2x2View(views, selectedTeam, cachedMatch, homeBitmap, awayBitmap, context)
+            views.setOnClickPendingIntent(R.id.widget_container_2x2, pendingIntent)
+        } else if (isLarge4x4) {
+            populate4x4View(views, selectedTeam, cachedMatch, homeBitmap, awayBitmap, compBitmap, context)
+            views.setOnClickPendingIntent(R.id.widget_container_4x4, pendingIntent)
+        } else {
+            populate4x2View(views, selectedTeam, cachedMatch, homeBitmap, awayBitmap, compBitmap, context)
+            views.setOnClickPendingIntent(R.id.widget_container_4x2, pendingIntent)
+        }
+
+        return views
+    }
+
+    // -------------------------------------------------------------
+    // 2x2 Compact Square: Crests + VS + Big Timer Countdown
+    // -------------------------------------------------------------
+    private fun populate2x2View(
+        views: RemoteViews,
+        selectedTeam: SelectedTeamEntity?,
+        cachedMatch: CachedMatchEntity?,
+        homeBitmap: Bitmap?,
+        awayBitmap: Bitmap?,
+        context: Context
+    ) {
+        if (selectedTeam == null) {
+            views.setViewVisibility(R.id.widget_2x2_state_match, View.GONE)
+            views.setViewVisibility(R.id.widget_2x2_state_no_fixture, View.GONE)
+            views.setViewVisibility(R.id.widget_2x2_state_empty, View.VISIBLE)
+            return
+        }
+        if (cachedMatch == null) {
+            views.setViewVisibility(R.id.widget_2x2_state_match, View.GONE)
+            views.setViewVisibility(R.id.widget_2x2_state_no_fixture, View.VISIBLE)
+            views.setViewVisibility(R.id.widget_2x2_state_empty, View.GONE)
+            views.setTextViewText(R.id.widget_2x2_no_fixture_team, selectedTeam.shortName.uppercase(Locale.getDefault()))
+            return
+        }
+
+        views.setViewVisibility(R.id.widget_2x2_state_match, View.VISIBLE)
+        views.setViewVisibility(R.id.widget_2x2_state_no_fixture, View.GONE)
+        views.setViewVisibility(R.id.widget_2x2_state_empty, View.GONE)
+
+        val compName = cachedMatch.competitionName?.uppercase(Locale.getDefault()) ?: "MATCH"
+        views.setTextViewText(R.id.widget_2x2_header_text, compName)
+
+        if (homeBitmap != null) {
+            views.setImageViewBitmap(R.id.widget_2x2_home_crest, homeBitmap)
+        }
+        if (awayBitmap != null) {
+            views.setImageViewBitmap(R.id.widget_2x2_away_crest, awayBitmap)
+        }
+
+        val kickoffDate = parseUtcDate(cachedMatch.utcDate)
+        if (kickoffDate != null) {
+            val diffMs = kickoffDate.time - System.currentTimeMillis()
+            if (diffMs <= 0) {
+                val timeSinceKickoff = -diffMs
+                if (timeSinceKickoff <= MATCH_WINDOW_MS) {
+                    views.setViewVisibility(R.id.widget_2x2_timer_box, View.GONE)
+                    views.setViewVisibility(R.id.widget_2x2_live_container, View.VISIBLE)
+                    views.setTextViewText(R.id.widget_2x2_live_status, "LIVE IN PLAY")
+                    scheduleRefreshAlarm(context, kickoffDate.time + MATCH_WINDOW_MS + 5000L)
+                } else {
+                    views.setViewVisibility(R.id.widget_2x2_timer_box, View.GONE)
+                    views.setViewVisibility(R.id.widget_2x2_live_container, View.VISIBLE)
+                    views.setTextViewText(R.id.widget_2x2_live_status, "FULL TIME")
+                }
+            } else {
+                views.setViewVisibility(R.id.widget_2x2_timer_box, View.VISIBLE)
+                views.setViewVisibility(R.id.widget_2x2_live_container, View.GONE)
+
+                val days = diffMs / (24 * 60 * 60 * 1000)
+                val baseTime = SystemClock.elapsedRealtime() + diffMs
+                views.setChronometerCountDown(R.id.widget_2x2_chronometer, true)
+                views.setChronometer(R.id.widget_2x2_chronometer, baseTime, null, true)
+
+                if (days >= 1) {
+                    views.setTextViewText(R.id.widget_2x2_timer_label, if (days == 1L) "1 DAY TO KICKOFF" else "$days DAYS TO KICKOFF")
+                } else {
+                    views.setTextViewText(R.id.widget_2x2_timer_label, "HOURS : MIN : SEC")
+                    scheduleRefreshAlarm(context, kickoffDate.time)
+                }
+            }
+        }
+    }
+
+    // -------------------------------------------------------------
+    // 3x2 / 4x2 Wide: Header bar, Team names, Crests, Digital clock
+    // -------------------------------------------------------------
+    private fun populate4x2View(
+        views: RemoteViews,
+        selectedTeam: SelectedTeamEntity?,
+        cachedMatch: CachedMatchEntity?,
+        homeBitmap: Bitmap?,
+        awayBitmap: Bitmap?,
+        compBitmap: Bitmap?,
+        context: Context
+    ) {
+        if (selectedTeam == null) {
+            views.setViewVisibility(R.id.widget_4x2_state_match, View.GONE)
+            views.setViewVisibility(R.id.widget_4x2_state_no_fixture, View.GONE)
+            views.setViewVisibility(R.id.widget_4x2_state_empty, View.VISIBLE)
+            return
+        }
+        if (cachedMatch == null) {
+            views.setViewVisibility(R.id.widget_4x2_state_match, View.GONE)
+            views.setViewVisibility(R.id.widget_4x2_state_no_fixture, View.VISIBLE)
+            views.setViewVisibility(R.id.widget_4x2_state_empty, View.GONE)
+            views.setTextViewText(R.id.widget_4x2_no_fixture_team, selectedTeam.shortName.uppercase(Locale.getDefault()))
+            return
+        }
+
+        views.setViewVisibility(R.id.widget_4x2_state_match, View.VISIBLE)
+        views.setViewVisibility(R.id.widget_4x2_state_no_fixture, View.GONE)
+        views.setViewVisibility(R.id.widget_4x2_state_empty, View.GONE)
+
+        val compName = cachedMatch.competitionName?.uppercase(Locale.getDefault()) ?: "MATCH"
+        views.setTextViewText(R.id.widget_4x2_competition_name, compName)
+
+        if (compBitmap != null) {
+            views.setImageViewBitmap(R.id.widget_4x2_comp_emblem, compBitmap)
+            views.setViewVisibility(R.id.widget_4x2_comp_emblem, View.VISIBLE)
+        } else {
+            views.setViewVisibility(R.id.widget_4x2_comp_emblem, View.GONE)
+        }
+
+        views.setTextViewText(R.id.widget_4x2_home_name, cachedMatch.homeTeamShort)
+        views.setTextViewText(R.id.widget_4x2_away_name, cachedMatch.awayTeamShort)
+
+        if (homeBitmap != null) {
+            views.setImageViewBitmap(R.id.widget_4x2_home_crest, homeBitmap)
+        }
+        if (awayBitmap != null) {
+            views.setImageViewBitmap(R.id.widget_4x2_away_crest, awayBitmap)
+        }
+
+        val kickoffDate = parseUtcDate(cachedMatch.utcDate)
+        if (kickoffDate != null) {
+            val kickoffFormat = SimpleDateFormat("EEE d MMM · HH:mm", Locale.US)
+            views.setTextViewText(R.id.widget_4x2_kickoff_datetime, kickoffFormat.format(kickoffDate).uppercase(Locale.US))
+
+            val diffMs = kickoffDate.time - System.currentTimeMillis()
+            if (diffMs <= 0) {
+                val timeSinceKickoff = -diffMs
+                if (timeSinceKickoff <= MATCH_WINDOW_MS) {
+                    views.setViewVisibility(R.id.widget_4x2_blocks_container, View.GONE)
+                    views.setViewVisibility(R.id.widget_4x2_live_container, View.VISIBLE)
+                    views.setTextViewText(R.id.widget_4x2_live_status, "IN PLAY · LIVE")
+                    scheduleRefreshAlarm(context, kickoffDate.time + MATCH_WINDOW_MS + 5000L)
+                } else {
+                    views.setViewVisibility(R.id.widget_4x2_blocks_container, View.GONE)
+                    views.setViewVisibility(R.id.widget_4x2_live_container, View.VISIBLE)
+                    views.setTextViewText(R.id.widget_4x2_live_status, "FULL TIME · FINISHED")
+                }
+            } else {
+                views.setViewVisibility(R.id.widget_4x2_blocks_container, View.VISIBLE)
+                views.setViewVisibility(R.id.widget_4x2_live_container, View.GONE)
+
+                val days = diffMs / (24 * 60 * 60 * 1000)
+                val baseTime = SystemClock.elapsedRealtime() + diffMs
+                views.setChronometerCountDown(R.id.widget_4x2_chronometer, true)
+                views.setChronometer(R.id.widget_4x2_chronometer, baseTime, null, true)
+
+                if (days >= 1) {
+                    views.setTextViewText(R.id.widget_4x2_chronometer_units, if (days == 1L) "MATCH TOMORROW · 1 DAY" else "$days DAYS TO KICKOFF")
+                } else {
+                    views.setTextViewText(R.id.widget_4x2_chronometer_units, "TOTAL HOURS : MIN : SEC")
+                    scheduleRefreshAlarm(context, kickoffDate.time)
+                }
+            }
+        }
+    }
+
+    // -------------------------------------------------------------
+    // 4x4 Large Showcase: Big Crests, Stadium Clock, Detailed Tag
+    // -------------------------------------------------------------
+    private fun populate4x4View(
+        views: RemoteViews,
+        selectedTeam: SelectedTeamEntity?,
+        cachedMatch: CachedMatchEntity?,
+        homeBitmap: Bitmap?,
+        awayBitmap: Bitmap?,
+        compBitmap: Bitmap?,
+        context: Context
+    ) {
+        if (selectedTeam == null) {
+            views.setViewVisibility(R.id.widget_4x4_state_match, View.GONE)
+            views.setViewVisibility(R.id.widget_4x4_state_no_fixture, View.GONE)
+            views.setViewVisibility(R.id.widget_4x4_state_empty, View.VISIBLE)
+            return
+        }
+        if (cachedMatch == null) {
+            views.setViewVisibility(R.id.widget_4x4_state_match, View.GONE)
+            views.setViewVisibility(R.id.widget_4x4_state_no_fixture, View.VISIBLE)
+            views.setViewVisibility(R.id.widget_4x4_state_empty, View.GONE)
+            views.setTextViewText(R.id.widget_4x4_no_fixture_team, selectedTeam.shortName.uppercase(Locale.getDefault()))
+            return
+        }
+
+        views.setViewVisibility(R.id.widget_4x4_state_match, View.VISIBLE)
+        views.setViewVisibility(R.id.widget_4x4_state_no_fixture, View.GONE)
+        views.setViewVisibility(R.id.widget_4x4_state_empty, View.GONE)
+
+        val compName = cachedMatch.competitionName?.uppercase(Locale.getDefault()) ?: "MATCH"
+        views.setTextViewText(R.id.widget_4x4_competition_name, compName)
+
+        if (compBitmap != null) {
+            views.setImageViewBitmap(R.id.widget_4x4_comp_emblem, compBitmap)
+            views.setViewVisibility(R.id.widget_4x4_comp_emblem, View.VISIBLE)
+        } else {
+            views.setViewVisibility(R.id.widget_4x4_comp_emblem, View.GONE)
+        }
+
+        views.setTextViewText(R.id.widget_4x4_home_name, cachedMatch.homeTeamShort)
+        views.setTextViewText(R.id.widget_4x4_away_name, cachedMatch.awayTeamShort)
+
+        if (homeBitmap != null) {
+            views.setImageViewBitmap(R.id.widget_4x4_home_crest, homeBitmap)
+        }
+        if (awayBitmap != null) {
+            views.setImageViewBitmap(R.id.widget_4x4_away_crest, awayBitmap)
+        }
+
+        val kickoffDate = parseUtcDate(cachedMatch.utcDate)
+        if (kickoffDate != null) {
+            val kickoffFormat = SimpleDateFormat("EEE d MMM · HH:mm", Locale.US)
+            views.setTextViewText(R.id.widget_4x4_kickoff_datetime, kickoffFormat.format(kickoffDate).uppercase(Locale.US))
+
+            val diffMs = kickoffDate.time - System.currentTimeMillis()
+            if (diffMs <= 0) {
+                val timeSinceKickoff = -diffMs
+                if (timeSinceKickoff <= MATCH_WINDOW_MS) {
+                    views.setViewVisibility(R.id.widget_4x4_blocks_container, View.GONE)
+                    views.setViewVisibility(R.id.widget_4x4_live_container, View.VISIBLE)
+                    views.setTextViewText(R.id.widget_4x4_live_status, "IN PLAY · SECOND HALF")
+                    scheduleRefreshAlarm(context, kickoffDate.time + MATCH_WINDOW_MS + 5000L)
+                } else {
+                    views.setViewVisibility(R.id.widget_4x4_blocks_container, View.GONE)
+                    views.setViewVisibility(R.id.widget_4x4_live_container, View.VISIBLE)
+                    views.setTextViewText(R.id.widget_4x4_live_status, "FULL TIME · FINISHED")
+                }
+            } else {
+                views.setViewVisibility(R.id.widget_4x4_blocks_container, View.VISIBLE)
+                views.setViewVisibility(R.id.widget_4x4_live_container, View.GONE)
+
+                val days = diffMs / (24 * 60 * 60 * 1000)
+                val baseTime = SystemClock.elapsedRealtime() + diffMs
+                views.setChronometerCountDown(R.id.widget_4x4_chronometer, true)
+                views.setChronometer(R.id.widget_4x4_chronometer, baseTime, null, true)
+
+                if (days >= 1) {
+                    val tagText = if (days == 1L) "MATCH TOMORROW · 1 DAY" else "$days DAYS TO KICKOFF"
+                    views.setTextViewText(R.id.widget_4x4_countdown_tag, tagText)
+                    views.setTextViewText(R.id.widget_4x4_chronometer_units, "TOTAL HOURS : MIN : SEC")
+                } else {
+                    views.setTextViewText(R.id.widget_4x4_countdown_tag, "🔥 MATCHDAY · KICKOFF TODAY")
+                    views.setTextViewText(R.id.widget_4x4_chronometer_units, "HOURS : MIN : SEC")
+                    scheduleRefreshAlarm(context, kickoffDate.time)
+                }
+            }
         }
     }
 

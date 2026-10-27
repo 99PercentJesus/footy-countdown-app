@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 2x2 Compact Square: Crests + VS + Big Timer Countdown -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_container_2x2"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="10dp"
+    android:background="@drawable/bg_widget"
+    android:gravity="center"
+    android:focusable="true"
+    android:clickable="true">
+
+    <!-- Active Match State -->
+    <LinearLayout
+        android:id="@+id/widget_2x2_state_match"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="visible">
+
+        <!-- Competition & Date Tag -->
+        <TextView
+            android:id="@+id/widget_2x2_header_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="LALIGA"
+            android:textColor="#A0A8B6"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.08"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:layout_marginBottom="6dp" />
+
+        <!-- Crests & VS Row: guaranteed to always fit cleanly -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="8dp">
+
+            <ImageView
+                android:id="@+id/widget_2x2_home_crest"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:scaleType="fitCenter" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="VS"
+                android:textColor="#525866"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp" />
+
+            <ImageView
+                android:id="@+id/widget_2x2_away_crest"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:scaleType="fitCenter" />
+        </LinearLayout>
+
+        <!-- Compact Timer Pill Block -->
+        <LinearLayout
+            android:id="@+id/widget_2x2_timer_box"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_digit_block"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:gravity="center">
+
+            <!-- Live Chronometer -->
+            <Chronometer
+                android:id="@+id/widget_2x2_chronometer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="00:00:00"
+                android:textColor="#3DFF8C"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:fontFamily="monospace"
+                android:gravity="center"
+                android:letterSpacing="0.05" />
+
+            <!-- Unit Label or Days Tag -->
+            <TextView
+                android:id="@+id/widget_2x2_timer_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="HRS : MIN : SEC"
+                android:textColor="#858D9C"
+                android:textSize="9sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08" />
+        </LinearLayout>
+
+        <!-- Live Status Ribbon for 2x2 -->
+        <LinearLayout
+            android:id="@+id/widget_2x2_live_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_digit_block"
+            android:padding="6dp"
+            android:gravity="center"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/widget_2x2_live_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="LIVE IN PLAY"
+                android:textColor="#FF4D4D"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.05" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- State 2: No Fixture -->
+    <LinearLayout
+        android:id="@+id/widget_2x2_state_no_fixture"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/widget_2x2_no_fixture_team"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="TEAM"
+            android:textColor="#3DFF8C"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No fixture scheduled"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+    </LinearLayout>
+
+    <!-- State 3: Empty Pick Team -->
+    <LinearLayout
+        android:id="@+id/widget_2x2_state_empty"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Footy"
+            android:textColor="#3DFF8C"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="+ Select team"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
+
+</LinearLayout>
